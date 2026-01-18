@@ -2,63 +2,47 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class QuranService {
-  final String _base = 'https://equran.id/api/v2';
+  // Base URL API Al-Quran Cloud
+  static const String _baseUrl = "http://api.alquran.cloud/v1";
 
-  Future<List<Map<String, dynamic>>> fetchSurahList() async {
+  // 1. Ambil Daftar Semua Surah
+  Future<List<dynamic>> getAllSurahs() async {
     try {
-      final uri = Uri.parse('$_base/surat');
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
-      if (resp.statusCode == 200) {
-        final body = jsonDecode(resp.body);
-        // equran returns a list at top-level or under 'data'
-        final data = body is List ? body : (body['data'] ?? body['surat'] ?? []);
-        if (data is List) {
-          return data.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e)).toList();
-        }
+      final response = await http.get(Uri.parse("$_baseUrl/surah"));
+      
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return json['data']; // Mengembalikan list surah
+      } else {
+        throw Exception("Gagal memuat surah");
       }
     } catch (e) {
-      print('[QuranService] fetchSurahList error: $e');
+      print("Error Surah: $e");
+      return [];
     }
-    return [];
   }
 
-  /// Fetch a single surah (ayat + translations) from equran.id
-  Future<Map<String, dynamic>?> fetchSurah(int number) async {
+  // 2. Ambil Detail Ayat per Surah (Arab + Terjemahan Indonesia)
+  Future<Map<String, dynamic>?> getSurahDetail(int number) async {
     try {
-      final uri = Uri.parse('$_base/surat/$number');
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
-      if (resp.statusCode == 200) {
-        final body = jsonDecode(resp.body);
-        final data = body is Map ? (body['data'] ?? body) : null;
-        if (data is Map<String, dynamic>) {
-          final name = data['nama'] ?? data['name'] ?? data['englishName'] ?? '';
-          final ayahs = <Map<String, dynamic>>[];
-          // equran may use 'ayat' list
-          final list = data['ayat'] ?? data['verses'] ?? data['list'] ?? data['ayahs'];
-          if (list is List) {
-            for (final a in list) {
-              try {
-                final m = Map<String, dynamic>.from(a);
-                final arab = m['teks'] ?? m['ar'] ?? m['text'] ?? m['arabic'] ?? '';
-                String translation = '';
-                if (m.containsKey('terjemahan')) {
-                  translation = m['terjemahan'] is String ? m['terjemahan'] : (m['terjemahan']['id'] ?? '');
-                } else if (m.containsKey('translation')) {
-                  translation = m['translation'] is String ? m['translation'] : (m['translation']['id'] ?? '');
-                }
-                ayahs.add({
-                  'numberInSurah': m['nomor'] ?? m['numberInSurah'] ?? m['number'] ?? 0,
-                  'arab': arab,
-                  'translation': translation,
-                });
-              } catch (_) {}
-            }
-          }
-          return {'name': name, 'number': number, 'ayahs': ayahs};
-        }
+      // Mengambil edisi quran-uthmani (Arab) dan id.indonesian (Terjemahan)
+      final response = await http.get(
+        Uri.parse("$_baseUrl/surah/$number/editions/quran-uthmani,id.indonesian")
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final data = json['data'] as List;
+        
+        // Data[0] = Teks Arab
+        // Data[1] = Terjemahan Indonesia
+        return {
+          'arabic': data[0],
+          'translation': data[1],
+        };
       }
     } catch (e) {
-      print('[QuranService] fetchSurah error: $e');
+      print("Error Detail Surah: $e");
     }
     return null;
   }

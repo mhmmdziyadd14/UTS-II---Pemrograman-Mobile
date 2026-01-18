@@ -1,41 +1,37 @@
-import 'package:adhan/adhan.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:adhan/adhan.dart'; // Masih dipakai untuk rumus Kiblat (Offline)
 
 class PrayerService {
-  PrayerTimes getPrayerTimes(double lat, double long) {
-    final myCoordinates = Coordinates(lat, long);
-    final params = CalculationMethod.singapore.getParameters();
-    params.madhab = Madhab.shafi;
-    
-    // Mengambil waktu sholat hari ini
-    return PrayerTimes.today(myCoordinates, params);
-  }
-
-  /// Fetch prayer times from Aladhan API for given coordinates.
-  /// Returns a map of timing names to strings (e.g. {'Fajr':'05:00', ...}) or null on failure.
-  Future<Map<String, String>?> fetchPrayerTimesFromApi(double lat, double long) async {
+  
+  // FUNGSI BARU: Ambil Jadwal Sholat dari API Aladhan
+  Future<Map<String, dynamic>?> getPrayerTimesFromApi(double lat, double long) async {
     try {
-      final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final uri = Uri.parse('http://api.aladhan.com/v1/timings/$ts?latitude=$lat&longitude=$long&method=2');
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
-      if (resp.statusCode == 200) {
-        final body = jsonDecode(resp.body) as Map<String, dynamic>;
-        final data = body['data'] as Map<String, dynamic>?;
-        if (data != null && data['timings'] is Map<String, dynamic>) {
-          final timings = Map<String, dynamic>.from(data['timings'] as Map);
-          // Keep only main prayer times
-          final keys = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-          final Map<String, String> result = {};
-          for (final k in keys) {
-            if (timings.containsKey(k)) result[k] = timings[k].toString();
-          }
-          return result;
-        }
+      final date = DateTime.now();
+      // Format tanggal URL: DD-MM-YYYY
+      final dateStr = "${date.day}-${date.month}-${date.year}";
+      
+      // Method 20: Kementerian Agama Republik Indonesia (Kemenag)
+      // Method 11: Majlis Ugama Islam Singapura
+      final url = Uri.parse("http://api.aladhan.com/v1/timings/$dateStr?latitude=$lat&longitude=$long&method=20");
+      
+      print("Mengambil data sholat dari: $url"); // Debugging
+
+      final response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        // Mengembalikan Map berisi jam: {"Fajr": "04:30", "Dhuhr": "11:50", ...}
+        return json['data']['timings'];
       }
     } catch (e) {
-      print('[PrayerService] fetchPrayerTimesFromApi failed: $e');
+      print("Error API Sholat: $e");
     }
     return null;
+  }
+
+  // Tetap pakai library adhan untuk Hitung Kiblat (karena ini rumus matematika murni, cepat & offline)
+  Qibla getQiblaDirection(double lat, double long) {
+    return Qibla(Coordinates(lat, long));
   }
 }

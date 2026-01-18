@@ -1,33 +1,31 @@
 class ReligiousEvent {
-  final int? id;
+  final dynamic id; // ID bisa string atau int
   final String title;
   final String date;
   final String location;
-  final String? description;
+  final String description;
+  final double? latitude;
+  final double? longitude;
 
   ReligiousEvent({
     this.id,
     required this.title,
     required this.date,
     required this.location,
-    this.description,
+    this.description = "",
+    this.latitude,
+    this.longitude,
   });
 
   factory ReligiousEvent.fromJson(Map<String, dynamic> json) {
-    final rawId = json['id'];
-    int? parsedId;
-    if (rawId is int) {
-      parsedId = rawId;
-    } else if (rawId is String) {
-      parsedId = int.tryParse(rawId);
-    }
-
     return ReligiousEvent(
-      id: parsedId,
-      title: json['title'] ?? '',
-      date: json['date'] ?? '',
-      location: json['location'] ?? '',
-      description: json['description'] ?? json['desc'] ?? '',
+      id: json['id'], 
+      title: json['title'],
+      date: json['date'],
+      location: json['location'],
+      description: json['description'] ?? "",
+      latitude: json['latitude'] != null ? (json['latitude'] is num ? (json['latitude'] as num).toDouble() : double.tryParse(json['latitude'].toString())) : null,
+      longitude: json['longitude'] != null ? (json['longitude'] is num ? (json['longitude'] as num).toDouble() : double.tryParse(json['longitude'].toString())) : null,
     );
   }
 
@@ -37,6 +35,8 @@ class ReligiousEvent {
       'date': date,
       'location': location,
       'description': description,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
     };
   }
 }

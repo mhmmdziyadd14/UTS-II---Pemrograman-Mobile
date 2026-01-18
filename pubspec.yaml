@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.1.3           # Untuk koneksi ke JSON Server & API Quran
+  http: ^0.13.6           # Untuk koneksi ke JSON Server & API Quran (pinned for flutter_map compatibility)
   provider: ^6.1.4       # State management sederhana
   intl: ^0.18.1          # Format tanggal/waktu
   shared_preferences: ^2.2.3 # Simpan sesi login sederhana
@@ -39,6 +39,9 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.5
+  flutter_compass: ^0.8.1
+  flutter_map: ^4.0.0
+  latlong2: ^0.8.1
 
 dev_dependencies:
   flutter_test:

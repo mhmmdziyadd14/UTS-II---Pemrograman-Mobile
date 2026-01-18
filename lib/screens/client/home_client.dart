@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/zis_provider.dart';
 import '../login_screen.dart';
 import 'qibla_screen.dart';
-import 'quran_screen.dart';
+import 'quran_screen.dart'; // Pastikan file ini ada
 import 'zis_form_screen.dart';
-import '../../providers/zis_provider.dart';
+// IMPORT HALAMAN DETAIL (PENTING)
 import '../common/event_detail_screen.dart';
 
 class HomeClient extends StatefulWidget {
@@ -17,19 +18,19 @@ class _HomeClientState extends State<HomeClient> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-  PrayerScreen(), // Jadwal sholat via API
+    QiblaScreen(), 
     QuranScreen(),
     ZisFormScreen(),
-    EventListScreen(), // Widget lokal di bawah
+    EventListScreen(), 
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("TrueDeen Client"),
+        title: Text("TrueDeen"),
+        elevation: 0,
         backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
@@ -41,24 +42,44 @@ class _HomeClientState extends State<HomeClient> {
         ],
       ),
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.teal,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.access_time), label: "Sholat"),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: "Quran"),
-          BottomNavigationBarItem(icon: Icon(Icons.monetization_on), label: "ZIS"),
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: "Info"),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+          backgroundColor: Colors.white,
+          indicatorColor: Colors.teal.shade100,
+          destinations: [
+            NavigationDestination(
+              icon: Icon(Icons.access_time_outlined),
+              selectedIcon: Icon(Icons.access_time_filled, color: Colors.teal.shade800),
+              label: 'Sholat',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book, color: Colors.teal.shade800),
+              label: 'Quran',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.volunteer_activism_outlined),
+              selectedIcon: Icon(Icons.volunteer_activism, color: Colors.teal.shade800),
+              label: 'ZIS',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.event_outlined),
+              selectedIcon: Icon(Icons.event, color: Colors.teal.shade800),
+              label: 'Info',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// Widget Sederhana untuk List Event Client
+// --- WIDGET LIST KEGIATAN (Event) ---
 class EventListScreen extends StatefulWidget {
   @override
   _EventListScreenState createState() => _EventListScreenState();
@@ -73,28 +94,87 @@ class _EventListScreenState extends State<EventListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ZisProvider>(builder: (context, provider, child) {
-      if (provider.isEventsLoading) return const Center(child: CircularProgressIndicator());
-      if (provider.eventList.isEmpty) return const Center(child: Text('Belum ada kegiatan'));
-
-      return ListView.separated(
-        itemCount: provider.eventList.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (ctx, i) {
-          final e = provider.eventList[i];
-          return ListTile(
-            leading: const Icon(Icons.event_note, color: Colors.teal),
-            title: Text(e.title),
-            subtitle: Text("${e.date} di ${e.location}"),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) =>
-                // lazy import to avoid circular issues
-                EventDetailScreen(event: e)
-              ));
-            },
-          );
-        },
-      );
-    });
+    final provider = Provider.of<ZisProvider>(context);
+    
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Kegiatan Masjid", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal)),
+          SizedBox(height: 10),
+          Expanded(
+            // Pengecekan isLoading yang aman
+            child: (provider.isLoading == true) 
+              ? Center(child: CircularProgressIndicator())
+              : provider.eventList.isEmpty 
+                ? Center(child: Text("Belum ada kegiatan"))
+                : ListView.builder(
+                    itemCount: provider.eventList.length,
+                    itemBuilder: (ctx, i) {
+                      final e = provider.eventList[i];
+                      return Card(
+                        margin: EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        clipBehavior: Clip.antiAlias, // Agar efek klik rapi dalam card
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: InkWell( 
+                          // --- FUNGSI KLIK MENUJU DETAIL ---
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EventDetailScreen(event: e),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(Icons.event_note, color: Colors.amber.shade800),
+                                ),
+                                SizedBox(width: 15),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(e.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                      SizedBox(height: 5),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                          SizedBox(width: 5),
+                                          Text(e.date, style: TextStyle(color: Colors.grey)),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                          SizedBox(width: 5),
+                                          Text(e.location, style: TextStyle(color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400)
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
